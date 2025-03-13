@@ -1,0 +1,9 @@
+circle-fit
+gitpython
+matplotlib
+opencv-contrib-python
+scikit-image
+scikit-learn
+scipy
+
+numpy < 2.0.0
