@@ -624,15 +624,13 @@ def convert_color_bit(image: np.ndarray | str, color_channels: int = None, out_b
 
         # Convert to desired bit-depth
         if out_bit_depth is not None:
+            max_val = float(converted_array.max()) or 1.0
             if "16" in in_bit_depth and "8" in str(out_bit_depth):  # 16-bit to 8-bit
-                converted_array = converted_array.astype(float)
-                converted_array = (converted_array / (2 ** 8)).astype('uint8')
+                converted_array = (converted_array.astype(float) / max_val * (2**8 - 1)).astype('uint8')
             elif "12" in in_bit_depth and "16" in str(out_bit_depth):  # 12-bit to 16-bit
-                converted_array = converted_array.astype(float)
-                converted_array = (converted_array / (2 ** 4)).astype('uint8')
+                converted_array = (converted_array.astype(float) / max_val * (2**4 - 1)).astype('uint8')
             elif "8" in in_bit_depth and "16" in str(out_bit_depth):  # 8-bit to 16-bit
-                converted_array = converted_array.astype(float)
-                converted_array = (converted_array * (2 ** 8)).astype('uint16')
+                converted_array = (converted_array.astype(float) / max_val * (2**16 - 1)).astype('uint16')
 
         # Convert to desired color
         if color_channels is not None:
