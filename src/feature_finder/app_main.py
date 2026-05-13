@@ -129,6 +129,7 @@ class FeatureFinder(QWidget):
         self.ui.file_path_browse_button.clicked.connect(lambda: self._click_import_file(browser=True))
         self.ui.rect_fit_check.clicked.connect(self._click_enable_rectangular_fitting)
         self.ui.reduce_noise_check.clicked.connect(self._click_reduce_noise)
+        self.ui.canny_edge_check.clicked.connect(self._click_canny_edge)
         self.ui.save_image_button.clicked.connect(self._click_save_drawing)
 
         # Entry box(es)
@@ -355,7 +356,7 @@ class FeatureFinder(QWidget):
 
         :return: None
         """
-        self.ui.canny_tab.setEnabled(self.ui.reduce_noise_check.isChecked())
+        self.ui.canny_tab.setEnabled(self.ui.canny_edge_check.isChecked())
         self._update_image()
 
     def _click_save_drawing(self):
