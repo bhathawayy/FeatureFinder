@@ -5,9 +5,10 @@ import sys
 from typing import Any
 
 import cv2
+from datetime import datetime
 import numpy as np
 import yaml
-from PySide6.QtCore import QRectF, Slot, QSignalBlocker
+from PySide6.QtCore import QRectF, Slot, QSignalBlocker, QObject
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import (QGraphicsView, QGraphicsScene, QSizePolicy, QApplication, QWidget, QStyleFactory,
                                QFileDialog, QMessageBox, QSlider, QSpinBox, QDoubleSpinBox, QAbstractSpinBox)
@@ -47,22 +48,40 @@ class FeatureFinder(QWidget):
         else:
             raise FileNotFoundError(f"Could not find any image at: {ex_image_path}")
 
-    def _add_logger(self):
+    def _add_logger(self, log_level: int = logging.INFO):
         """
         Add a file handler to the logger.
         
         :return: None
         """
-        logger_path = os.path.join(os.path.dirname(__file__), "resources", "feature_finder_log.log")
-        if os.path.exists(logger_path):
-            os.remove(logger_path)
-        os.makedirs(os.path.dirname(logger_path), exist_ok=True)
-        file_handler = logging.FileHandler(logger_path)
-        file_handler.setLevel(logging.INFO)
+
+        # Initialize basics for logger
+        timestamp = datetime.today().strftime('%y-%m-%d')
         formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s",
                                       datefmt="%Y-%m-%d %H:%M:%S")
+
+        logger_path = os.path.join(RESOURCES, "logs", f"ff_log_{timestamp}.log")
+        os.makedirs(os.path.dirname(logger_path), exist_ok=True)
+
+        # Create root logger
+        root_logger = logging.getLogger()
+        root_logger.setLevel(log_level)
+        for h in list(root_logger.handlers):
+            root_logger.removeHandler(h)
+
+            # noinspection PyBroadException
+            try:
+                h.close()
+            except Exception:  # needs to be broad
+                pass
+
+        # File handler on root logger — captures ALL modules
+        file_handler = logging.FileHandler(logger_path, encoding='utf-8')
+        file_handler.setLevel(log_level)
         file_handler.setFormatter(formatter)
-        self._logger.addHandler(file_handler)
+        root_logger.addHandler(file_handler)
+
+        self._logger = logging.getLogger(__name__)
 
     def _attach_functions_to_widgets(self):
         """
@@ -123,7 +142,7 @@ class FeatureFinder(QWidget):
         """
         # Define local variables
         toggled_widget, slider, spin_box = self._get_bonded_widget()
-        if toggled_widget is None:
+        if not isinstance(toggled_widget, (QSpinBox, QSlider, QDoubleSpinBox)):
             return
         widget_name = toggled_widget.objectName().lower()
         new_val = toggled_widget.value()
@@ -149,7 +168,7 @@ class FeatureFinder(QWidget):
             with QSignalBlocker(spin_box):
                 spin_box.setValue(new_val)
         else:
-            slider.setValue(new_val)
+            slider.setValue(int(new_val))
 
         # Update image for any changes
         self._update_image()
@@ -212,7 +231,7 @@ class FeatureFinder(QWidget):
 
             # Try to import image
             if os.path.isfile(file_path):
-                raw_array = cv2.imread(file_path, cv2.IMREAD_UNCHANGED)
+                raw_array = np.asarray(cv2.imread(file_path, cv2.IMREAD_UNCHANGED))
                 if raw_array.size > 0 and raw_array is not None:
                     rgb_image = convert_color_bit(raw_array, color_channels=3, out_bit_depth=8)
                     ok = True
@@ -255,8 +274,10 @@ class FeatureFinder(QWidget):
             self.ui.classic_tab.setEnabled(True)
             self.ui.edge_detection_frame.setEnabled(True)
             self.ui.feature_fitting_frame.setEnabled(True)
-            self.ui.edge_detection_tabs.setEnabled(True)
             self.ui.save_image_button.setEnabled(True)
+
+            self.ui.edge_detection_tabs.setEnabled(True)  # has to be after ED frame is enabled
+            self.ui.fitting_tabs.setEnabled(True)  # has to be after fitting frame is enabled
 
             self.ui.arch_tab.setEnabled(self.ui.arch_fit_check.isChecked())
             self.ui.canny_tab.setEnabled(self.ui.canny_edge_check.isChecked())
@@ -350,7 +371,7 @@ class FeatureFinder(QWidget):
         if self._raw_image.size > 0 and self.drawn_image.size > 0:
 
             # Check the image path
-            file_path = os.path.join(os.path.dirname(self.ui.file_path_entry.toPlainText()), "ff_drawing.png")
+            file_path = os.path.join(os.path.dirname(str(self.ui.file_path_entry.text())), "ff_drawing.png")
             checked_path = check_path(file_path)
             checked_dir = os.path.dirname(checked_path)
 
@@ -436,7 +457,7 @@ class FeatureFinder(QWidget):
         return msg_box.exec()
 
     def _get_bonded_widget(self) -> tuple[
-        QWidget | QSlider | QSpinBox | QDoubleSpinBox, QSlider, QSpinBox | QDoubleSpinBox]:
+        QObject, QSlider, QSpinBox | QDoubleSpinBox]:
         """
         Get the bonded widget i.e. slider if spin-box, or spin-box if slider.
 

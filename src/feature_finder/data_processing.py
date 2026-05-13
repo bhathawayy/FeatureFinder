@@ -57,15 +57,20 @@ class DetectionBase:
             raise FileNotFoundError("Improper image input!")
 
     def _find_arches(self):
+        """Find arch-like patterns."""
 
-        def find_open_side_using_convexity_defect(cnt):
+        def find_open_side_using_convexity_defect(cnt) -> str | None:
+            """
+            Determine which side of the arch is the 'top' or 'bottom'.
+            :param cnt: Contour of interest.
+            :return: 'Top' or 'bottom' characterization (None of 'Could not determine')
+            """
             # Ensure correct shape
             if len(cnt.shape) == 2:
                 cnt = cnt.reshape(-1, 1, 2)
 
             cnt = cnt.astype(np.int32)
-
-            hull = cv2.convexHull(cnt, returnPoints=False)
+            hull = np.asarray(cv2.convexHull(cnt, returnPoints=False))
             if hull is None or len(hull) < 3:
                 return None  # no hull or too small contour
 
@@ -85,9 +90,9 @@ class DetectionBase:
             else:
                 return "bottom"
 
-        def get_u_score(cnt) -> tuple[float, str]:
+        def get_u_score(cnt) -> tuple[float, str | None]:
 
-            def curvature_score(pts):
+            def curvature_score(pts: np.ndarray) -> float:
                 # Use only bottom 30%
                 y = pts[:, 1]
                 y_max = y.max()
@@ -100,9 +105,10 @@ class DetectionBase:
 
                 # measure radial variance
                 distances = np.sqrt((bottom[:, 0] - x) ** 2 + (bottom[:, 1] - y) ** 2)
-                return 1.0 / (1.0 + np.std(distances))
 
-            def parallel_score(pts):
+                return 1.0 / (1.0 + float(np.std(distances)))
+
+            def parallel_score(pts: np.ndarray) -> float:
                 x = pts[:, 0]
                 mid = np.median(x)
 
@@ -120,21 +126,23 @@ class DetectionBase:
                 dot = abs(vx1 * vx2 + vy1 * vy2)
                 if isinstance(dot, (list, np.ndarray)):
                     if len(dot) == 1:
-                        dot = dot[0]
+                        dot = float(dot[0])
                     else:
+                        dot = np.nan
                         print("WHAT")
 
-                return float(dot)
+                return dot
 
-            def openness_score():
+            def openness_score() -> float:
                 pts = cnt.reshape(-1, 2)
                 y = pts[:, 1]
                 y_min, y_max = y.min(), y.max()
 
                 top = pts[y < y_min + 0.3 * (y_max - y_min)]
+
                 return np.ptp(top[:, 0])  # larger gap = more open
 
-            def get_lower_u_shape(percentile: int = 90):
+            def get_lower_u_shape(percentile: int = 90) -> np.ndarray:
                 pts = cnt.reshape(-1, 2)
                 y = pts[:, 1]
 
@@ -182,11 +190,7 @@ class DetectionBase:
                     )
 
     def _find_contours(self):
-        """
-        Find contours/edges in the image.
-
-        :return: None.
-        """
+        """Find contours/edges in the image."""
         # Find edges/contours
         contours_found, _ = cv2.findContours(self._image_thresh, cv2.RETR_LIST, cv2.CHAIN_APPROX_NONE)
 
@@ -201,22 +205,24 @@ class DetectionBase:
                 continue
             area = cv2.contourArea(contour)
             if size_range[0] < area <= size_range[1]:
+
                 # Show edge detection
                 approx = cv2.approxPolyDP(contour, 1, True)
-                cv2.drawContours(self.display_image, [approx], 0, self._color_edge,
-                                 min(1, int(self._draw_size / 2)))
+                cv2.drawContours(self.display_image, [approx], 0, self._color_edge, min(1, int(self._draw_size / 2)))
 
                 # Save detection info
                 self._contours_all.append((contour, approx, area, perimeter))
 
     def _find_crosshairs(self):
-        """
-        Once contours have found, search for the appropriate shapes, then draw these on the debug image.
+        """Once contours have found, search for the appropriate shapes, then draw these on the debug image."""
 
-        :return: None
-        """
+        def sort_into_slope_category(line_end_points: list | tuple | np.ndarray) -> tuple:
+            """
+            Sort based on slope of line.
 
-        def sort_into_slope_category(line_end_points):
+            :param line_end_points: End points defining a line.
+            :return: Line information.
+            """
             x1, y1, x2, y2 = line_end_points
 
             # Calculate slope category for line1
@@ -235,7 +241,13 @@ class DetectionBase:
 
             return (x1, y1), (x2, y2), dx, dy, tilt_angle, color
 
-        def is_duplicate(new_feature):
+        def is_duplicate(new_feature) -> bool:
+            """
+            Determine if feature is already accounted for.
+
+            :param new_feature: Feature to check.
+            :return: Duplicate flag.
+            """
             for existing in self.found_features:
                 if (existing.area == new_feature.area and
                         existing.width == new_feature.width and
@@ -299,7 +311,6 @@ class DetectionBase:
         Once contours have found, search for blobs, then draw these on the debug image.
 
         :param include: Flag to include feature in findings or just use the non-blob contours.
-        :return: None.
         """
         self._contours_non_blobs = []
         size_range = self.settings.feature_fitting.ellipse.elliptical_size_range
@@ -325,7 +336,7 @@ class DetectionBase:
                             centroid=(int(cx), int(cy)),
                             height=round(h, self._sig_fig),
                             rotation=round(angle, self._sig_fig),
-                            shape_type="circle" if abs(min(w, h) / max(w, h)) > 0.95 else "ellipse",
+                            shape_type="circle" if abs(float(min(w, h)) / float(max(w, h))) > 0.95 else "ellipse",
                             width=round(w, self._sig_fig)
                         )
                     )
@@ -334,13 +345,16 @@ class DetectionBase:
                 self._contours_non_blobs.append((contour, approx, contour_area, contour_perimeter))
 
     def _find_rects(self):
-        """
-        Once contours have found, search for the appropriate shapes, then draw these on the debug image.
-
-        :return: None
-        """
+        """Once contours have found, search for the appropriate shapes, then draw these on the debug image."""
 
         def distance(p1: tuple[float | int, float | int], p2: tuple[float | int, float | int]) -> float:
+            """
+            Get distance between two points.
+
+            :param p1: Point 1's coordinates.
+            :param p2: Point 2's coordinates.
+            :return: Distance between them.
+            """
             return round(math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2), self._sig_fig)
 
         size_range = self.settings.feature_fitting.rectangle.rectangular_size_range
@@ -389,11 +403,7 @@ class DetectionBase:
         return int(val)
 
     def _reset(self):
-        """
-        Reset variables that are internally referenced and built upon.
-
-        :return: None
-        """
+        """Reset variables that are internally referenced and built upon."""
         self._contours_all = []
         self._contours_non_blobs = []
         self._lines = np.array([])
@@ -455,11 +465,17 @@ class DetectionBase:
 
         return update_next
 
-    def detect_features(self, update_gauss: bool = True, update_threshold: bool = True, update_hough: bool = True) -> \
-    list[FeatureInfo]:
+    def detect_features(self,
+                        update_gauss: bool = True,
+                        update_hough: bool = True,
+                        update_threshold: bool = True,
+                        ) -> list[FeatureInfo]:
         """
         Detect features i.e. ellipses, rectangular objects, and/or crosshairs.
 
+        :param update_gauss: Flag to update Gaussian blur.
+        :param update_hough: Flag to update Hough thresholding.
+        :param update_threshold: Flag to update thresholding.
         :return: List of found features.
         """
         # Reset variables
@@ -501,11 +517,23 @@ class DetectionBase:
         """
 
         def winsorize(gray_image: np.ndarray):
+            """
+            Winsorize the image.
+
+            :param gray_image: Original image array (must be monochrome).
+            :return: Winsorized image array.
+            """
             winsor = self.settings.edge_detection.noise_handling.noise_winsor_percentile
 
             return np.clip(gray_image, 0, np.percentile(gray_image, winsor)).astype(np.uint8)
 
         def normalize(image_array: np.ndarray) -> np.ndarray:
+            """
+            Normalize image.
+
+            :param image_array: Original image array.
+            :return: Normalized image array.
+            """
             normalized = image_array.astype(np.float32)
             p_lo, p_hi = np.percentile(normalized, self.settings.edge_detection.noise_handling.noise_percentile_range)
             if p_hi <= p_lo + 1e-6:  # to prevent 0
@@ -517,6 +545,12 @@ class DetectionBase:
             return normalized
 
         def background_subtraction(image_array: np.ndarray) -> np.ndarray:
+            """
+            Subtract background noise.
+
+            :param image_array: Original image array.
+            :return: Normalized image array.
+            """
             k_size = self._make_odd(self.settings.edge_detection.edge_gauss_blur_kernel)
             background = cv2.GaussianBlur(image_array, (k_size, k_size), 0)
             subtracted = cv2.subtract(image_array, background)
@@ -525,6 +559,12 @@ class DetectionBase:
             return subtracted
 
         def contrast_boost(image_array: np.ndarray) -> np.ndarray:
+            """
+            Boost localized contrast.
+
+            :param image_array: Original image array.
+            :return: Boosted image array.
+            """
             # Define local variables
             clahe_clip = self.settings.edge_detection.noise_handling.contrast_clahe_clip_limit
             clahe_grid = self.settings.edge_detection.noise_handling.contrast_clahe_grid_size
@@ -598,8 +638,11 @@ def check_path(target_path: str, overwrite: bool = True) -> str:
     return target_path
 
 
-def convert_color_bit(image: np.ndarray | str, color_channels: int = None, out_bit_depth: int = None,
-                      in_bit_depth: int = None) -> np.ndarray:
+def convert_color_bit(image: np.ndarray | str,
+                      color_channels: int = None,
+                      in_bit_depth: int = None,
+                      out_bit_depth: int = None,
+                      ) -> np.ndarray:
     """
     Converts image array into RGB/Monochrome with specified bit-depth.
 
