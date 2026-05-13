@@ -2839,10 +2839,10 @@
          </size>
         </property>
         <property name="cursor">
-         <cursorShape>ArrowCursor</cursorShape>
+         <cursorShape>WhatsThisCursor</cursorShape>
         </property>
         <property name="toolTip">
-         <string/>
+         <string>Enter or select a image path to start detection.</string>
         </property>
         <property name="text">
          <string>Input File Path:</string>
@@ -2889,10 +2889,10 @@
          </size>
         </property>
         <property name="cursor">
-         <cursorShape>WhatsThisCursor</cursorShape>
+         <cursorShape>ArrowCursor</cursorShape>
         </property>
         <property name="toolTip">
-         <string>File browser for image path selection.</string>
+         <string/>
         </property>
         <property name="autoFillBackground">
          <bool>false</bool>
@@ -2926,7 +2926,10 @@
          </size>
         </property>
         <property name="cursor">
-         <cursorShape>ArrowCursor</cursorShape>
+         <cursorShape>WhatsThisCursor</cursorShape>
+        </property>
+        <property name="toolTip">
+         <string>Save the displayed image and data to the provided directory.</string>
         </property>
         <property name="text">
          <string>Export Drawing:</string>
@@ -2954,10 +2957,10 @@
          </size>
         </property>
         <property name="cursor">
-         <cursorShape>WhatsThisCursor</cursorShape>
+         <cursorShape>ArrowCursor</cursorShape>
         </property>
         <property name="toolTip">
-         <string>Save the displayed image and data to the provided directory.</string>
+         <string/>
         </property>
         <property name="text">
          <string>Save to File...</string>
@@ -2979,7 +2982,7 @@
          </size>
         </property>
         <property name="toolTip">
-         <string>Enter or select a image path to start detection.</string>
+         <string/>
         </property>
         <property name="maxLength">
          <number>2000000000</number>
