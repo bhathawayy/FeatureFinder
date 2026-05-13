@@ -142,3 +142,4 @@ cython_debug/
 /src/feature_finder/interface/.qtcreator
 *.yaml
 src/feature_finder/resources/ff_drawing.png
+*.autosave

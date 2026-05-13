@@ -440,7 +440,7 @@ class FeatureFinder(QWidget):
         """
         # Handle case where sender is a line edit within a spin box
         toggled_widget = self.sender()
-        if hasattr(toggled_widget, 'parent') and isinstance(toggled_widget.parent(), QSpinBox):
+        if hasattr(toggled_widget, 'parent') and isinstance(toggled_widget.parent(), (QSpinBox, QDoubleSpinBox)):
             toggled_widget = toggled_widget.parent()
 
         # Get widget handles
@@ -843,7 +843,7 @@ class FeatureFinder(QWidget):
 
 class Display(QGraphicsView):
 
-    def __init__(self, parent: FeatureFinder = None):
+    def __init__(self, parent: FeatureFinder):
         """
         Graphics viewer object used to display frames from the camera.
 
@@ -879,7 +879,7 @@ class Display(QGraphicsView):
 
 class CustomGraphicsScene(QGraphicsScene):
 
-    def __init__(self, parent: Display = None):
+    def __init__(self, parent: Display):
         """
         Graphics scene object used to display frames from the camera.
 

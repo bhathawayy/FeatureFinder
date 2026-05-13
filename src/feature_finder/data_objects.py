@@ -70,7 +70,7 @@ class JSONConfig(BaseModel):
 
         except ValidationError as err_v:
             error_info = err_v.errors()[0] if err_v.errors() else {"type": "validation_error", "loc": ("<unknown>",)}
-            msg = f"{error_info['type'].capitalize()} field(s) in {err_v.title} JSON: {error_info['loc']}"
+            msg = f"{str(error_info['type']).capitalize()} field(s) in {err_v.title} JSON: {error_info['loc']}"
         except json.JSONDecodeError as err_j:
             msg = f"JSON parse error in {file_path}: {err_j}"
         except PermissionError:
@@ -80,8 +80,6 @@ class JSONConfig(BaseModel):
         finally:
             if msg is not None:
                 raise Exception(msg)
-
-        return None
 
     def to_file(self, file_path: str, write_mode: str = "w") -> None:
         """
