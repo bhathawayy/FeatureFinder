@@ -12,7 +12,7 @@ from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import (QGraphicsView, QGraphicsScene, QSizePolicy, QApplication, QWidget, QStyleFactory,
                                QFileDialog, QMessageBox, QSlider, QSpinBox, QDoubleSpinBox, QAbstractSpinBox)
 
-from feature_finder import resources
+from feature_finder.__init__ import RESOURCES
 from feature_finder.data_processing import convert_color_bit, check_path, DetectionBase
 from feature_finder.interface.ui_form import Ui_featureFinder
 
@@ -39,9 +39,13 @@ class FeatureFinder(QWidget):
         self.drawn_image: np.ndarray = np.array([])
 
         # Startup routines for GUI
-        startup_image = cv2.imread(os.path.join(next(iter(resources.__path__)), "sample.png"), cv2.IMREAD_UNCHANGED)
-        self.detector: DetectionBase = DetectionBase(startup_image)
-        self._startup()
+        ex_image_path = os.path.join(RESOURCES, "sample.png")
+        startup_image = cv2.imread(ex_image_path, cv2.IMREAD_UNCHANGED)
+        if startup_image is not None:
+            self.detector: DetectionBase = DetectionBase(startup_image)
+            self._startup()
+        else:
+            raise FileNotFoundError(f"Could not find any image at: {ex_image_path}")
 
     def _add_logger(self):
         """

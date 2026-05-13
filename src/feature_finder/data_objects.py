@@ -149,7 +149,7 @@ class DetectionSettings(JSONConfig):
 
 
 if __name__ == "__main__":
-    from feature_finder import resources
+    from feature_finder.__init__ import RESOURCES
 
     # Reset settings file
-    DetectionSettings().to_file(os.path.join(next(iter(resources.__path__)), "detection_settings.json"))
+    DetectionSettings().to_file(os.path.join(RESOURCES, "detection_settings.json"))

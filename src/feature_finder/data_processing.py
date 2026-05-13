@@ -6,7 +6,7 @@ import cv2
 import numpy as np
 
 from feature_finder.data_objects import FeatureInfo, DetectionSettings
-
+from feature_finder.__init__ import RESOURCES
 
 class DetectionBase:
 
@@ -38,16 +38,16 @@ class DetectionBase:
         self.found_features: list[FeatureInfo] = []
 
         # Import settings
-        if isinstance(detection_settings, str) and os.path.isfile(detection_settings):
-            self.settings = DetectionSettings().from_file(detection_settings)
-        elif isinstance(detection_settings, DetectionSettings):
-            self.settings = detection_settings
-        elif detection_settings is None:
-            from feature_finder import resources
-            self.settings = DetectionSettings().from_file(os.path.join(next(iter(resources.__path__)),
-                                                                       "detection_settings.json"))
+        if isinstance(detection_settings, DetectionSettings):
+            self.settings: DetectionSettings = detection_settings
         else:
-            raise ValueError("No valid detection settings were passed!")
+            self.settings: DetectionSettings = DetectionSettings()
+            if isinstance(detection_settings, str) and os.path.isfile(detection_settings):
+                temp_settings = self.settings.from_file(detection_settings)
+            else:
+                temp_settings = self.settings.from_file(os.path.join(RESOURCES, "detection_settings.json"))
+            if isinstance(temp_settings, DetectionSettings):
+                self.settings: DetectionSettings = temp_settings
 
         # Initialize arrays
         if self._raw_array.size > 0:
