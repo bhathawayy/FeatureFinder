@@ -180,12 +180,13 @@ class FeatureFinder(QWidget):
         :return: None
         """
         toggled_widget, slider, spin_box = self._get_bonded_widget()
-        new_val = toggled_widget.value()
-        with QSignalBlocker(spin_box):
-            if "circularity" in spin_box.objectName().lower() or "u_score" in spin_box.objectName().lower():
-                new_val *= 1 / 100
-            spin_box.setValue(new_val)
-        self._update_image()
+        if isinstance(toggled_widget, QSlider):
+            new_val = toggled_widget.value()
+            with QSignalBlocker(spin_box):
+                if "circularity" in spin_box.objectName().lower() or "u_score" in spin_box.objectName().lower():
+                    new_val *= 1 / 100
+                spin_box.setValue(new_val)
+            self._update_image()
 
     def _change_spin(self, toggled_widget: QSpinBox, attribute_name: str):
         """
