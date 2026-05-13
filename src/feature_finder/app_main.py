@@ -418,14 +418,17 @@ class FeatureFinder(QWidget):
             self.ui.save_status_label.setStyleSheet("color: red;")
             self._logger.warning(f"No data to save.")
 
-    def _dialog_and_log(self, message: str, button: int = 0, level: int = 0,
-                        err_handle: Exception | None = None) -> int:
+    def _dialog_and_log(self, message: str,
+                        button: int = 0,
+                        err_handle: Exception | None = None,
+                        level: int = 0,
+                        ) -> int:
         """
         Display a dialog box with the given message.
 
-        :param message: Message to display in the dialog box
         :param button: Button options (default = OK, 1 = OK/CANCEL, 3 = YES/NO/CANCEL, 4 = YES/NO)
         :param level: Dialog level (0 = prompt, 1 = warning, 2 = error)
+        :param message: Message to display in the dialog box
         :return: User's response to the dialog.
         """
         # Set title and icon based on level
@@ -457,8 +460,7 @@ class FeatureFinder(QWidget):
 
         return msg_box.exec()
 
-    def _get_bonded_widget(self) -> tuple[
-        QObject, QSlider, QSpinBox | QDoubleSpinBox]:
+    def _get_bonded_widget(self) -> tuple[QObject, QSlider, QSpinBox | QDoubleSpinBox]:
         """
         Get the bonded widget i.e. slider if spin-box, or spin-box if slider.
 
