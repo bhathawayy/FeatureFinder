@@ -41,6 +41,17 @@ class FeatureInfo(BaseModel):
 
 class JSONConfig(BaseModel):
 
+    @staticmethod
+    def _find_section(model: "BaseModel", section_type: Type[T]) -> Optional[T]:
+        for value in model.__dict__.values():
+            if isinstance(value, section_type):
+                return value
+            if isinstance(value, BaseModel):
+                result = JSONConfig._find_section(value, section_type)
+                if result is not None:
+                    return result
+        return None
+
     @classmethod
     def from_file(cls: Type[T], file_path: str) -> Optional[T]:
         """
@@ -80,6 +91,16 @@ class JSONConfig(BaseModel):
         finally:
             if msg is not None:
                 raise Exception(msg)
+
+    def get_section(self, section_type: Type[T]) -> Optional[T]:
+        """
+        Recursively find and return the first nested field matching section_type.
+
+        :param section_type: The Pydantic model class to search for.
+        :return: The first instance of section_type found, or None if not found.
+        """
+        result = self._find_section(self, section_type)
+        return result.model_copy(deep=True) if result else None
 
     def to_file(self, file_path: str, write_mode: str = "w") -> None:
         """

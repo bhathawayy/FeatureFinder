@@ -2,18 +2,20 @@ import logging
 import math
 import os
 import sys
+from datetime import datetime
 from typing import Any
 
 import cv2
-from datetime import datetime
 import numpy as np
 import yaml
 from PySide6.QtCore import QRectF, Slot, QSignalBlocker, QObject
 from PySide6.QtGui import QImage, QPainter
 from PySide6.QtWidgets import (QGraphicsView, QGraphicsScene, QSizePolicy, QApplication, QWidget, QStyleFactory,
                                QFileDialog, QMessageBox, QSlider, QSpinBox, QDoubleSpinBox, QAbstractSpinBox)
+from pydantic import BaseModel
 
 from feature_finder.__init__ import RESOURCES
+from feature_finder.data_objects import DetectionSettings
 from feature_finder.data_processing import convert_color_bit, check_path, DetectionBase
 from feature_finder.interface.ui_form import Ui_featureFinder
 
@@ -36,6 +38,7 @@ class FeatureFinder(QWidget):
         # Define class variables
         self._display: Display = Display(self)
         self._logger: logging.Logger = logging.getLogger(__name__)
+        self._old_settings: DetectionSettings = DetectionSettings()
         self._raw_image: np.ndarray = np.array([])
         self.drawn_image: np.ndarray = np.array([])
 
@@ -124,13 +127,15 @@ class FeatureFinder(QWidget):
 
         # Button(s) / Check box(es)
         self.ui.arch_fit_check.clicked.connect(self._click_enable_arch_fitting)
+        self.ui.canny_edge_check.clicked.connect(self._click_canny_edge)
         self.ui.crosshair_fit_check.clicked.connect(self._click_enable_crosshair_fitting)
         self.ui.elliptical_fit_check.clicked.connect(self._click_enable_elliptical_fitting)
         self.ui.file_path_browse_button.clicked.connect(lambda: self._click_import_file(browser=True))
+        self.ui.invert_image_check.clicked.connect(self._click_invert_image)
         self.ui.rect_fit_check.clicked.connect(self._click_enable_rectangular_fitting)
         self.ui.reduce_noise_check.clicked.connect(self._click_reduce_noise)
-        self.ui.canny_edge_check.clicked.connect(self._click_canny_edge)
         self.ui.save_image_button.clicked.connect(self._click_save_drawing)
+        self.ui.show_processed_image_check.clicked.connect(self._click_show_processed)
 
         # Entry box(es)
         self.ui.file_path_entry.returnPressed.connect(self._click_import_file)
@@ -200,19 +205,6 @@ class FeatureFinder(QWidget):
         widget_name = toggled_widget.objectName().lower()
         slider = self.ui.__getattribute__(widget_name.replace("_spin", "_slider"))
         slider.setValue(int(getattr(self, attribute_name)))
-
-    def _check_for_setting_dif(self, prop: property, settings_handle) -> bool:
-        """
-        Check for difference in settings
-        """
-        property_name = prop.fget.__name__
-        property_value = prop.fget(self)
-
-        if property_value != settings_handle.__getattribute__(property_name):
-            settings_handle.__setattr__(property_name, property_value)
-            return True
-        else:
-            return False
 
     def _click_import_file(self, browser: bool = False):
         """
@@ -302,7 +294,16 @@ class FeatureFinder(QWidget):
             self.detector = DetectionBase(self._raw_image)
 
             # Update the stream window to show imported image
-            self._update_image()
+            self._update_settings_from_ui(old_settings=True)
+            self._update_image(force_update=True)
+
+    def _click_invert_image(self):
+        self._update_settings_from_ui()
+        self._update_image(force_update=True)
+
+    def _click_show_processed(self):
+        self._update_settings_from_ui()
+        self._update_image(force_update=True)
 
     def _click_enable_arch_fitting(self):
         """
@@ -570,102 +571,114 @@ class FeatureFinder(QWidget):
         # Attach functionality
         self._attach_functions_to_widgets()
 
-    def _update_referenced_settings(self):
-
+    def _update_settings_from_ui(self, old_settings: bool = False):
         """
         Update the internally tracked settings based on UI.
-
-        :return: None
+        
+        :param old_settings: Flag for updating the old settings.
         """
+        settings = self._old_settings if old_settings else self.detector.settings
+
         # Edge detection settings ----------------------------------------------------------------------------------- #
 
         ## Classic
-        self.detector.settings.edge_detection.flag_invert_image = self.ui.invert_image_check.isChecked()
-        self.detector.settings.edge_detection.flag_show_processed = self.ui.show_processed_image_check.isChecked()
-        # self.detector.settings.edge_detection.gauss_blur_kernel = self.gauss_blur_kernel
-        # self.detector.settings.edge_detection.pixel_threshold = self.pixel_threshold
-        # self.detector.settings.edge_detection.size_range = self.feature_size_range
+        settings.edge_detection.contour_size_range = self.contour_size_range
+        settings.edge_detection.edge_gauss_blur_kernel = self.edge_gauss_blur_kernel
+        settings.edge_detection.edge_pixel_threshold = self.edge_pixel_threshold
+        settings.edge_detection.flag_invert_image = self.ui.invert_image_check.isChecked()
+        settings.edge_detection.flag_show_processed = self.ui.show_processed_image_check.isChecked()
 
         ## Canny edge
-        # self.detector.settings.edge_detection.canny_edge_range = self.canny_edge_range
-        self.detector.settings.edge_detection.flag_canny_edged = self.ui.canny_edge_check.isChecked()
+        settings.edge_detection.edge_canny_range = self.edge_canny_range
+        settings.edge_detection.flag_canny_edged = self.ui.canny_edge_check.isChecked()
 
         ## Noise: Normalization
-        self.detector.settings.edge_detection.flag_reduce_noise = self.ui.reduce_noise_check.isChecked()
-        # self.detector.settings.edge_detection.noise_handling.percentile_range = self.noise_percentile_range
-        # self.detector.settings.edge_detection.noise_handling.winsor_percentile = self.winsor_percentile
+        settings.edge_detection.flag_reduce_noise = self.ui.reduce_noise_check.isChecked()
+        settings.edge_detection.noise_handling.noise_percentile_range = self.noise_percentile_range
+        settings.edge_detection.noise_handling.noise_winsor_percentile = self.noise_winsor_percentile
 
         ## Noise: Contrast boost
-        # self.detector.settings.edge_detection.noise_handling.tophat_ksize = self.contrast_top_hat_kernel
-        # self.detector.settings.edge_detection.noise_handling.clahe_grid_size = self.contrast_clahe_grid_size
-        # self.detector.settings.edge_detection.noise_handling.clahe_clip = self.contrast_clahe_clip_limit
+        settings.edge_detection.noise_handling.contrast_clahe_clip_limit = self.contrast_clahe_clip_limit
+        settings.edge_detection.noise_handling.contrast_clahe_grid_size = self.contrast_clahe_grid_size
+        settings.edge_detection.noise_handling.contrast_top_hat_kernel = self.contrast_top_hat_kernel
 
         # Feature fitting settings ---------------------------------------------------------------------------------- #
 
         ## Crosshair
-        self.detector.settings.feature_fitting.crosshair.flag_fit_feature = self.ui.crosshair_fit_check.isChecked()
-        # self.detector.settings.feature_fitting.crosshair.hough_threshold = self.crosshair_hough_threshold
-        # self.detector.settings.feature_fitting.crosshair.max_line_gap = self.crosshair_distance
-        # self.detector.settings.feature_fitting.crosshair.max_slope = self.crosshair_max_slope
-        # self.detector.settings.feature_fitting.crosshair.min_length = self.crosshair_min_length
+        settings.feature_fitting.crosshair.crosshair_hough_threshold = self.crosshair_hough_threshold
+        settings.feature_fitting.crosshair.crosshair_max_line_gap = self.crosshair_max_line_gap
+        settings.feature_fitting.crosshair.crosshair_max_slope = self.crosshair_max_slope
+        settings.feature_fitting.crosshair.crosshair_min_length = self.crosshair_min_length
+        settings.feature_fitting.crosshair.flag_fit_feature = self.ui.crosshair_fit_check.isChecked()
 
         ## Elliptical
-        # self.detector.settings.feature_fitting.ellipse.circularity_min = self.circularity_min
-        self.detector.settings.feature_fitting.ellipse.flag_fit_feature = self.ui.elliptical_fit_check.isChecked()
-        # self.detector.settings.feature_fitting.ellipse.size_range = self.elliptical_size_range
+        settings.feature_fitting.ellipse.elliptical_circularity_min = self.elliptical_circularity_min
+        settings.feature_fitting.ellipse.elliptical_size_range = self.elliptical_size_range
+        settings.feature_fitting.ellipse.flag_fit_feature = self.ui.elliptical_fit_check.isChecked()
 
         ## Rectangular
-        self.detector.settings.feature_fitting.rectangle.flag_fit_feature = self.ui.rect_fit_check.isChecked()
-        # self.detector.settings.feature_fitting.rectangle.size_range = self.rectangular_size_range
+        settings.feature_fitting.rectangle.flag_fit_feature = self.ui.rect_fit_check.isChecked()
+        settings.feature_fitting.rectangle.rectangular_size_range = self.rectangular_size_range
 
         ## Arched
-        self.detector.settings.feature_fitting.arch.flag_fit_feature = self.ui.arch_fit_check.isChecked()
-        # self.detector.settings.feature_fitting.arch.min_u_score = self.arch_u_score
-        # self.detector.settings.feature_fitting.rectangle.size_range = self.arch_size_range
+        settings.feature_fitting.arch.arch_min_u_score = self.arch_min_u_score
+        settings.feature_fitting.arch.flag_fit_feature = self.ui.arch_fit_check.isChecked()
+        settings.feature_fitting.arch.arch_size_range = self.arch_size_range
 
-    def _update_image(self):
+    def _update_image(self, force_update: bool = False):
         """
         Update the drawn image internally.
         
         :return: None
         """
 
+        def check_for_setting_dif(settings_handle: BaseModel) -> bool:
+            """
+            Check for difference in settings.
+
+            :param settings_handle: Settings to check.
+            """
+            return settings_handle == self._old_settings.get_section(type(settings_handle))
+
         if self._raw_image.size > 0:
 
-            # Define local variables
-            edge_settings = self.detector.settings.edge_detection
-            noise_settings = self.detector.settings.edge_detection.noise_handling
+            self._update_settings_from_ui()
 
-            # Determine preprocessing
-            if self.ui.reduce_noise_check.isChecked():
-                update1 = self._check_for_setting_dif(type(self).noise_percentile_range, noise_settings)
-                update2 = self._check_for_setting_dif(type(self).noise_winsor_percentile, noise_settings)
-                update3 = self._check_for_setting_dif(type(self).contrast_top_hat_kernel, noise_settings)
-                update4 = self._check_for_setting_dif(type(self).contrast_clahe_grid_size, noise_settings)
-                update5 = self._check_for_setting_dif(type(self).contrast_clahe_clip_limit, noise_settings)
-                update_noise = any([update1, update2, update3, update4, update5,
-                                    edge_settings.flag_reduce_noise != True])
+            if force_update:
+                update_threshold, update_gauss, update_hough = True, True, True
             else:
-                update_noise = False
-            if self.ui.invert_image_check.isChecked() != edge_settings.flag_invert_image and not update_noise:
-                update_noise = True
-            update_gauss = self._check_for_setting_dif(type(self).edge_gauss_blur_kernel, edge_settings) or update_noise
-            update_threshold = self._check_for_setting_dif(type(self).edge_pixel_threshold,
-                                                           edge_settings) or update_gauss
-            if self.ui.crosshair_fit_check.isChecked():
-                crosshair_settings = self.detector.settings.feature_fitting.crosshair
-                update1 = self._check_for_setting_dif(type(self).crosshair_hough_threshold, crosshair_settings)
-                update2 = self._check_for_setting_dif(type(self).crosshair_min_length, crosshair_settings)
-                update3 = self._check_for_setting_dif(type(self).crosshair_max_line_gap, crosshair_settings)
-                update_hough = update_threshold or any([update1, update2, update3])
-            else:
-                update_hough = False
+                # Determine updates for noise handling
+                if self.ui.reduce_noise_check.isChecked():
+                    update_noise = any([check_for_setting_dif(self._old_settings.edge_detection.noise_handling),
+                                        self._old_settings.edge_detection.flag_reduce_noise != True])
+                else:
+                    update_noise = False
+
+                # Determine updates for edge detection
+                if update_noise:
+                    update_threshold, update_gauss = True, True
+                else:
+                    edge_settings = self.detector.settings.edge_detection
+                    update_gauss = any([self._old_settings.edge_detection.edge_gauss_blur_kernel !=
+                                        edge_settings.edge_gauss_blur_kernel, update_noise])
+                    update_threshold = any([self._old_settings.edge_detection.edge_pixel_threshold !=
+                                            edge_settings.edge_pixel_threshold,
+                                            self._old_settings.edge_detection.flag_invert_image !=
+                                            edge_settings.flag_invert_image, update_gauss])
+
+                # Determine updates for crosshair detection
+                if self.ui.crosshair_fit_check.isChecked():
+                    update_hough = any([check_for_setting_dif(self._old_settings.feature_fitting.crosshair),
+                                        self._old_settings.feature_fitting.crosshair.flag_fit_feature != True,
+                                        update_threshold])
+                else:
+                    update_hough = False
 
             # Find and draw contours/detections
-            self._update_referenced_settings()
             self.detector.detect_features(update_threshold=update_threshold,
                                           update_gauss=update_gauss,
                                           update_hough=update_hough)
+            self._update_settings_from_ui(old_settings=True)
 
             # Log settings
             self._logger.info(f"Updated image with settings:\n{self.detector.settings.__dict__}")

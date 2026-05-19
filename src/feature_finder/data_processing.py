@@ -5,8 +5,9 @@ import warnings
 import cv2
 import numpy as np
 
-from feature_finder.data_objects import FeatureInfo, DetectionSettings
 from feature_finder.__init__ import RESOURCES
+from feature_finder.data_objects import FeatureInfo, DetectionSettings
+
 
 class DetectionBase:
 
@@ -205,7 +206,6 @@ class DetectionBase:
                 continue
             area = cv2.contourArea(contour)
             if size_range[0] < area <= size_range[1]:
-
                 # Show edge detection
                 approx = cv2.approxPolyDP(contour, 1, True)
                 cv2.drawContours(self.display_image, [approx], 0, self._color_edge, min(1, int(self._draw_size / 2)))
@@ -317,9 +317,8 @@ class DetectionBase:
         for contour, approx, contour_area, contour_perimeter in self._contours_all:
 
             # Sort according to circularity
-            circularity = contour_area / cv2.contourArea(cv2.convexHull(contour))
-            if circularity >= self.settings.feature_fitting.ellipse.elliptical_circularity_min and len(
-                    approx) > 4:  # prevent circle fitting of rects
+            circularity = contour_area / cv2.contourArea(np.asarray(cv2.convexHull(contour)))
+            if circularity >= self.settings.feature_fitting.ellipse.elliptical_circularity_min:  # and len(approx) >= 4:  # TODO: prevent circle fitting of rects
 
                 # Filter based on circle size
                 circle = np.array([pnt[0] for pnt in approx])
@@ -408,6 +407,7 @@ class DetectionBase:
         self._contours_non_blobs = []
         self._lines = np.array([])
         self.found_features = []
+        self._image_mono8 = convert_color_bit(self._raw_array, color_channels=1, out_bit_depth=8)
 
     def apply_gauss_blur(self, update: bool = True) -> bool:
         """
@@ -669,11 +669,11 @@ def convert_color_bit(image: np.ndarray | str,
         if out_bit_depth is not None:
             max_val = float(converted_array.max()) or 1.0
             if "16" in in_bit_depth and "8" in str(out_bit_depth):  # 16-bit to 8-bit
-                converted_array = (converted_array.astype(float) / max_val * (2**8 - 1)).astype('uint8')
+                converted_array = (converted_array.astype(float) / max_val * (2 ** 8 - 1)).astype('uint8')
             elif "12" in in_bit_depth and "16" in str(out_bit_depth):  # 12-bit to 16-bit
-                converted_array = (converted_array.astype(float) / max_val * (2**4 - 1)).astype('uint8')
+                converted_array = (converted_array.astype(float) / max_val * (2 ** 4 - 1)).astype('uint8')
             elif "8" in in_bit_depth and "16" in str(out_bit_depth):  # 8-bit to 16-bit
-                converted_array = (converted_array.astype(float) / max_val * (2**16 - 1)).astype('uint16')
+                converted_array = (converted_array.astype(float) / max_val * (2 ** 16 - 1)).astype('uint16')
 
         # Convert to desired color
         if color_channels is not None:
