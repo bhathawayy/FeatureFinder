@@ -681,7 +681,7 @@ class FeatureFinder(QWidget):
             self._update_settings_from_ui(old_settings=True)
 
             # Log settings
-            self._logger.info(f"Updated image with settings:\n{self.detector.settings.__dict__}")
+            self._logger.info(f"Updated image shown.")
 
             # Update stream window
             self.drawn_image = self.detector.display_image

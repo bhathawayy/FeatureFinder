@@ -24,7 +24,7 @@ class DetectionBase:
         self._color_line_h: tuple[int, int, int] = (255, 0, 255)  # Color for horizontal lines [BGR]
         self._color_line_v: tuple[int, int, int] = (255, 255, 0)  # Color for vertical lines [BGR]
         self._color_rect: tuple[int, int, int] = (255, 0, 0)  # Color for rects [BGR]
-        self._draw_size: int = 4  # Edge thickness of drawn features
+        self._draw_size: int = 3  # Edge thickness of drawn features
         self._min_deviation: int = 10  # Min. deviation for filtering duplicates
         self._sig_fig: int = 4  # Significant digits used when rounding
 
