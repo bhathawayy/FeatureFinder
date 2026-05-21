@@ -405,6 +405,7 @@ class DetectionBase:
         """Reset variables that are internally referenced and built upon."""
         self._contours_all = []
         self._contours_non_blobs = []
+        self._image_normal = np.array([])
         self._lines = np.array([])
         self.found_features = []
         self._image_mono8 = convert_color_bit(self._raw_array, color_channels=1, out_bit_depth=8)
@@ -457,8 +458,12 @@ class DetectionBase:
         :return: Whether the shown image needs further updates.
         """
         if update or len(self._image_thresh) == 0:
-            threshold = self.settings.edge_detection.edge_pixel_threshold
-            _, self._image_thresh = cv2.threshold(self._image_gauss, threshold, 255, cv2.THRESH_BINARY)
+            if self.settings.edge_detection.flag_canny_edged:
+                self._image_thresh = cv2.Canny(self._image_gauss, self.settings.edge_detection.edge_canny_range[0],
+                                           self.settings.edge_detection.edge_canny_range[1])
+            else:
+                threshold = self.settings.edge_detection.edge_pixel_threshold
+                _, self._image_thresh = cv2.threshold(self._image_gauss, threshold, 255, cv2.THRESH_BINARY)
             update_next = True
         else:
             update_next = False

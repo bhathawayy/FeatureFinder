@@ -177,7 +177,7 @@ class FeatureFinder(QWidget):
             slider.setValue(int(new_val))
 
         # Update image for any changes
-        self._update_image()
+        self._update_image(force_update=True)
 
     def _change_slider(self):
         """
@@ -358,7 +358,8 @@ class FeatureFinder(QWidget):
         :return: None
         """
         self.ui.canny_tab.setEnabled(self.ui.canny_edge_check.isChecked())
-        self._update_image()
+        self._update_settings_from_ui()
+        self._update_image(force_update=True)
 
     def _click_save_drawing(self):
         """
