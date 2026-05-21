@@ -782,9 +782,9 @@ class Ui_featureFinder(object):
         self.canny_min_spin.setSizePolicy(sizePolicy3)
         self.canny_min_spin.setMinimumSize(QSize(100, 24))
         self.canny_min_spin.setFont(font1)
-        self.canny_min_spin.setMaximum(100000)
-        self.canny_min_spin.setSingleStep(100)
-        self.canny_min_spin.setValue(100)
+        self.canny_min_spin.setMaximum(255)
+        self.canny_min_spin.setSingleStep(1)
+        self.canny_min_spin.setValue(0)
 
         self.gridLayout_13.addWidget(self.canny_min_spin, 0, 2, 1, 1)
 
@@ -803,9 +803,9 @@ class Ui_featureFinder(object):
         sizePolicy1.setHeightForWidth(self.canny_min_slider.sizePolicy().hasHeightForWidth())
         self.canny_min_slider.setSizePolicy(sizePolicy1)
         self.canny_min_slider.setMinimumSize(QSize(200, 0))
-        self.canny_min_slider.setMaximum(100000)
-        self.canny_min_slider.setSingleStep(100)
-        self.canny_min_slider.setValue(100)
+        self.canny_min_slider.setMaximum(255)
+        self.canny_min_slider.setSingleStep(1)
+        self.canny_min_slider.setValue(0)
         self.canny_min_slider.setOrientation(Qt.Orientation.Horizontal)
 
         self.gridLayout_13.addWidget(self.canny_min_slider, 0, 1, 1, 1)
@@ -816,9 +816,9 @@ class Ui_featureFinder(object):
         self.canny_max_spin.setSizePolicy(sizePolicy3)
         self.canny_max_spin.setMinimumSize(QSize(100, 24))
         self.canny_max_spin.setFont(font1)
-        self.canny_max_spin.setMaximum(100000)
-        self.canny_max_spin.setSingleStep(100)
-        self.canny_max_spin.setValue(100000)
+        self.canny_max_spin.setMaximum(255)
+        self.canny_max_spin.setSingleStep(1)
+        self.canny_max_spin.setValue(255)
 
         self.gridLayout_13.addWidget(self.canny_max_spin, 1, 2, 1, 1)
 
@@ -837,9 +837,9 @@ class Ui_featureFinder(object):
         sizePolicy1.setHeightForWidth(self.canny_max_slider.sizePolicy().hasHeightForWidth())
         self.canny_max_slider.setSizePolicy(sizePolicy1)
         self.canny_max_slider.setMinimumSize(QSize(200, 0))
-        self.canny_max_slider.setMaximum(100000)
-        self.canny_max_slider.setSingleStep(100)
-        self.canny_max_slider.setValue(100000)
+        self.canny_max_slider.setMaximum(255)
+        self.canny_max_slider.setSingleStep(1)
+        self.canny_max_slider.setValue(255)
         self.canny_max_slider.setOrientation(Qt.Orientation.Horizontal)
 
         self.gridLayout_13.addWidget(self.canny_max_slider, 1, 1, 1, 1)
