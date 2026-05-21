@@ -130,7 +130,6 @@ class DetectionBase:
                         dot = float(dot[0])
                     else:
                         dot = np.nan
-                        print("WHAT")
 
                 return dot
 
@@ -460,7 +459,7 @@ class DetectionBase:
         if update or len(self._image_thresh) == 0:
             if self.settings.edge_detection.flag_canny_edged:
                 self._image_thresh = cv2.Canny(self._image_gauss, self.settings.edge_detection.edge_canny_range[0],
-                                           self.settings.edge_detection.edge_canny_range[1])
+                                               self.settings.edge_detection.edge_canny_range[1])
             else:
                 threshold = self.settings.edge_detection.edge_pixel_threshold
                 _, self._image_thresh = cv2.threshold(self._image_gauss, threshold, 255, cv2.THRESH_BINARY)
@@ -644,9 +643,9 @@ def check_path(target_path: str, overwrite: bool = True) -> str:
 
 
 def convert_color_bit(image: np.ndarray | str,
-                      color_channels: int = None,
-                      in_bit_depth: int = None,
-                      out_bit_depth: int = None,
+                      color_channels: int | None = None,
+                      in_bit_depth: int | None = None,
+                      out_bit_depth: int | None = None,
                       ) -> np.ndarray:
     """
     Converts image array into RGB/Monochrome with specified bit-depth.

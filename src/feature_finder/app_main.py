@@ -21,9 +21,7 @@ from feature_finder.interface.ui_form import Ui_featureFinder
 
 
 class FeatureFinder(QWidget):
-    """
-    Main widget for the feature-finder application.
-    """
+    """Main widget for the feature-finder application."""
 
     def __init__(self, parent=None):
         """
@@ -52,11 +50,7 @@ class FeatureFinder(QWidget):
             raise FileNotFoundError(f"Could not find any image at: {ex_image_path}")
 
     def _add_logger(self, log_level: int = logging.INFO):
-        """
-        Add a file handler to the logger.
-        
-        :return: None
-        """
+        """Add a file handler to the logger."""
 
         # Initialize basics for logger
         timestamp = datetime.today().strftime('%y-%m-%d')
@@ -87,11 +81,8 @@ class FeatureFinder(QWidget):
         self._logger = logging.getLogger(__name__)
 
     def _attach_functions_to_widgets(self):
-        """
-        Attach functions to various widgets in the UI.
-        
-        :return: None
-        """
+        """Attach functions to various widgets in the UI."""
+
         # Slider(s)
         for slider in self.findChildren(QSlider):
             slider_name = slider.objectName().lower()
@@ -141,11 +132,8 @@ class FeatureFinder(QWidget):
         self.ui.file_path_entry.returnPressed.connect(self._click_import_file)
 
     def _change_range_slider_or_spin(self):
-        """
-        Update the toggled widget and any bonded widgets.
+        """Update the toggled widget and any bonded widgets."""
 
-        :return: None
-        """
         # Define local variables
         toggled_widget, slider, spin_box = self._get_bonded_widget()
         if not isinstance(toggled_widget, (QSpinBox, QSlider, QDoubleSpinBox)):
@@ -180,11 +168,8 @@ class FeatureFinder(QWidget):
         self._update_image(force_update=True)
 
     def _change_slider(self):
-        """
-        Action for changing a slider widget.
+        """Action for changing a slider widget."""
 
-        :return: None
-        """
         toggled_widget, slider, spin_box = self._get_bonded_widget()
         if isinstance(toggled_widget, QSlider):
             new_val = toggled_widget.value()
@@ -198,20 +183,15 @@ class FeatureFinder(QWidget):
         """
         Action for changing a spin-box widget.
 
-        :param toggled_widget: Toggled spin-box (self.sender() doesn't work with lambda)
         :param attribute_name: Name of property call.
-        :return: None
+        :param toggled_widget: Toggled spin-box (self.sender() doesn't work with lambda)
         """
         widget_name = toggled_widget.objectName().lower()
         slider = self.ui.__getattribute__(widget_name.replace("_spin", "_slider"))
         slider.setValue(int(getattr(self, attribute_name)))
 
     def _click_import_file(self, browser: bool = False):
-        """
-        Open a file dialog to browse and select an image file.
-
-        :return: None
-        """
+        """Open a file dialog to browse and select an image file."""
 
         def import_image(file_path: str) -> np.ndarray:
             """
@@ -298,75 +278,57 @@ class FeatureFinder(QWidget):
             self._update_image(force_update=True)
 
     def _click_invert_image(self):
+        """Invert the image before processing."""
         self._update_settings_from_ui()
         self._update_image(force_update=True)
 
     def _click_show_processed(self):
+        """Show the processed image to the user instead of the raw image."""
         self._update_settings_from_ui()
         self._update_image(force_update=True)
 
     def _click_enable_arch_fitting(self):
-        """
-        Enable controls if fitting is enabled.
+        """Enable controls if fitting is enabled."""
 
-        :return: None
-        """
         self.ui.arch_tab.setEnabled(self.ui.arch_fit_check.isChecked())
         self._update_image()
 
     def _click_enable_crosshair_fitting(self):
-        """
-        Enable controls if fitting is enabled.
+        """Enable controls if fitting is enabled."""
 
-        :return: None
-        """
         self.ui.crosshair_tab.setEnabled(self.ui.crosshair_fit_check.isChecked())
         self._update_image()
 
     def _click_enable_elliptical_fitting(self):
-        """
-        Enable controls if fitting is enabled.
+        """Enable controls if fitting is enabled."""
 
-        :return: None
-        """
         self.ui.elliptical_tab.setEnabled(self.ui.elliptical_fit_check.isChecked())
         self._update_image()
 
     def _click_enable_rectangular_fitting(self):
-        """
-        Enable controls if fitting is enabled.
+        """Enable controls if fitting is enabled."""
 
-        :return: None
-        """
         self.ui.rect_tab.setEnabled(self.ui.rect_fit_check.isChecked())
         self._update_image()
 
     def _click_reduce_noise(self):
-        """
-        Enable controls if noise handling is enabled.
+        """Enable controls if noise handling is enabled."""
 
-        :return: None
-        """
         self.ui.noise_normalize_tab.setEnabled(self.ui.reduce_noise_check.isChecked())
         self.ui.noise_contrast_tab.setEnabled(self.ui.reduce_noise_check.isChecked())
-        self._update_image()
+        self._update_settings_from_ui()
+        self._update_image(force_update=True)
 
     def _click_canny_edge(self):
-        """
-        Enable controls if Canny edging is enabled.
+        """Enable controls if Canny edging is enabled."""
 
-        :return: None
-        """
         self.ui.canny_tab.setEnabled(self.ui.canny_edge_check.isChecked())
         self._update_settings_from_ui()
         self._update_image(force_update=True)
 
     def _click_save_drawing(self):
-        """
-        Save the current drawn image to a file.
-        
-        :return: None
-        """
+        """Save the current drawn image to a file."""
+
         # Update UI
         self.ui.save_status_label.setText("Saving...")
         self.ui.save_status_label.setStyleSheet("color: black;")
@@ -482,11 +444,7 @@ class FeatureFinder(QWidget):
         return toggled_widget, slider, spin_box
 
     def _set_defaults(self):
-        """
-        Set default values for UI elements.
-        
-        :return: None
-        """
+        """Set default values for UI elements."""
 
         def set_widget_value(widget_family_member: QWidget, setting_handle: Any, float_slider_factor: float = 1):
 
@@ -558,11 +516,8 @@ class FeatureFinder(QWidget):
         self.ui.show_processed_image_check.setChecked(edge_settings.flag_show_processed)
 
     def _startup(self):
-        """
-        Routines to run on startup of the GUI.
-        
-        :return: None
-        """
+        """Routines to run on startup of the GUI."""
+
         # Init logger
         self._add_logger()
 
@@ -627,11 +582,7 @@ class FeatureFinder(QWidget):
         settings.feature_fitting.arch.arch_size_range = self.arch_size_range
 
     def _update_image(self, force_update: bool = False):
-        """
-        Update the drawn image internally.
-        
-        :return: None
-        """
+        """Update the drawn image internally."""
 
         def check_for_setting_dif(settings_handle: BaseModel) -> bool:
             """
@@ -689,11 +640,7 @@ class FeatureFinder(QWidget):
             self._update_stream_window()
 
     def _update_stream_window(self):
-        """
-        Update the stream window with the drawn image.
-        
-        :return: None
-        """
+        """Update the stream window with the drawn image."""
         if self.drawn_image.size > 0:
             s = self.drawn_image.shape
             q_image = QImage(self.drawn_image.tobytes(), s[1], s[0], 3 * s[1], QImage.Format.Format_RGB888)
@@ -915,7 +862,6 @@ class Display(QGraphicsView):
         Action for when a new image is received.
 
         :param image: New image frame from camera.
-        :return: None
         """
         self.scene.set_image(image)
 
@@ -938,7 +884,6 @@ class CustomGraphicsScene(QGraphicsScene):
         Handle the wheel event for zooming in/out under the mouse cursor.
 
         :param event: Event object.
-        :return: None
         """
         if self.root.underMouse():  # Ensure the mouse is over the widget
             # Get the zoom factor
@@ -966,7 +911,6 @@ class CustomGraphicsScene(QGraphicsScene):
         Set the image handle to be equal to the camera frame.
 
         :param image: New image frame from camera.
-        :return: None
         """
         self.image = image
         self.update()
@@ -977,7 +921,6 @@ class CustomGraphicsScene(QGraphicsScene):
 
         :param painter: Qt painter object used to "draw" image.
         :param rect: Qt rectangular object to define image size.
-        :return: None
         """
         # Display size
         display_width = self.root.width()
@@ -1015,11 +958,8 @@ class CustomGraphicsScene(QGraphicsScene):
 
 
 def launch_gui():
-    """
-    Main functionality. Launches GUI for feature detection.
+    """Main functionality. Launches GUI for feature detection."""
 
-    :return: None
-    """
     app = QApplication(sys.argv)
     app.setStyle(QStyleFactory.create("fusion"))
     widget = FeatureFinder()
