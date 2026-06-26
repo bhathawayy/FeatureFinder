@@ -5,3 +5,4 @@
 *.yaml
 .idea/
 /src/feature_finder/interface/.qtcreator
+/.qtcreator
